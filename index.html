@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusGo BI 商業分析與營運決策儀表板 | Executive Decision Portal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Local and CDN Apache ECharts Fallback -->
+  <script src="echarts.min.js"></script>
+  <script>
+    if (typeof echarts === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"><\/script>');
+    }
+  </script>
+  <!-- Load Compiled Analytics Bundle -->
+  <script src="dashboard_data.js"></script>
+  <!-- Custom Styling -->
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#090D16',
+              surface: '#111726',
+              elevated: '#182238',
+              border: '#1F2D47',
+              cyan: '#06B6D4',
+              emerald: '#10B981',
+              amber: '#F59E0B',
+              rose: '#F43F5E',
+              indigo: '#6366F1'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#090D16] text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-white">
+
+  <!-- Top Executive Navigation Bar -->
+  <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-emerald-400 p-0.5 shadow-lg shadow-cyan-500/20">
+        <div class="w-full h-full bg-[#0B0F19] rounded-[10px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-tr from-cyan-400 to-emerald-300 text-lg">
+          CG
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
+            CampusGo BI 商業分析決策儀表板
+          </h1>
+          <span class="badge badge-cyan text-xs">Consulting Grade</span>
+        </div>
+        <p class="text-xs text-slate-400">校園外送平台營運健康度、履約瓶頸、客訴治理與商戶診斷</p>
+      </div>
+    </div>
+
+    <!-- Executive Quick Status Indicators -->
+    <div class="hidden xl:flex items-center gap-6 text-xs text-slate-300">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-slate-400">數據範疇:</span>
+        <span class="font-semibold text-white font-mono" id="quick-orders-count">248,500 訂單</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-slate-400">客訴案件:</span>
+        <span class="font-semibold text-white font-mono" id="quick-complaints-count">524 案件</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-slate-400">SLA 達成狀態:</span>
+        <span class="badge badge-rose text-xs" id="quick-sla-badge">43.04% 重度違約警報</span>
+      </div>
+    </div>
+
+    <!-- Action Toolbar -->
+    <div class="flex items-center gap-2.5">
+      <button onclick="toggleExportModal()" class="px-3.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold border border-emerald-500/40 transition flex items-center gap-1.5 shadow-sm">
+        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        📥 匯出數據 (CSV / JSON)
+      </button>
+      <button onclick="toggleShareModal()" class="px-3.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold border border-indigo-500/40 transition flex items-center gap-1.5 shadow-sm">
+        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+        🌐 分享與免安裝使用
+      </button>
+      <button onclick="window.print()" class="px-3.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-xs font-medium border border-slate-700 transition flex items-center gap-1.5 text-slate-200">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+        列印 / 簡報匯出
+      </button>
+      <button onclick="toggleDataModal()" class="px-3.5 py-1.5 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 text-xs font-medium border border-cyan-500/30 transition flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+        資料規格說明
+      </button>
+    </div>
+  </header>
+
+  <!-- Interactive Global Filter Panel -->
+  <section class="glass-panel mx-6 mt-4 p-4 rounded-xl border border-slate-800">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+          決策維度篩選:
+        </span>
+
+        <!-- Dataset / Period Selector -->
+        <div class="flex items-center gap-1.5 bg-[#0B0F19] px-3 py-1.5 rounded-lg border border-slate-700">
+          <label class="text-xs text-slate-400">數據基準:</label>
+          <select id="filter-dataset" class="bg-transparent text-xs text-cyan-300 font-medium focus:outline-none cursor-pointer">
+            <option value="2025_ALL" class="bg-slate-900 text-white" selected>2025 全年度基準 (Q1–Q4, 24.8萬筆)</option>
+            <option value="2025_Q1" class="bg-slate-900 text-white">2025 Q1 (56,900 筆訂單)</option>
+            <option value="2025_Q2" class="bg-slate-900 text-white">2025 Q2 (63,500 筆訂單)</option>
+            <option value="2025_Q3" class="bg-slate-900 text-white">2025 Q3 (57,500 筆訂單)</option>
+            <option value="2025_Q4" class="bg-slate-900 text-white">2025 Q4 (70,600 筆訂單)</option>
+            <option value="2026_Q1" class="bg-slate-900 text-white">2026 Q1 模擬驗證期 (54,000 筆訂單)</option>
+          </select>
+        </div>
+
+        <!-- Campus Selector -->
+        <div class="flex items-center gap-1.5 bg-[#0B0F19] px-3 py-1.5 rounded-lg border border-slate-700">
+          <label class="text-xs text-slate-400">校園:</label>
+          <select id="filter-campus" class="bg-transparent text-xs text-slate-200 font-medium focus:outline-none cursor-pointer">
+            <option value="ALL" class="bg-slate-900 text-white" selected>全部校園 (All 6 大學)</option>
+            <option value="北城大學" class="bg-slate-900 text-white">北城大學</option>
+            <option value="海灣科技大學" class="bg-slate-900 text-white">海灣科技大學</option>
+            <option value="南港人文大學" class="bg-slate-900 text-white">南港人文大學</option>
+            <option value="中央應用大學" class="bg-slate-900 text-white">中央應用大學</option>
+            <option value="西苑健康大學" class="bg-slate-900 text-white">西苑健康大學</option>
+            <option value="東湖商業大學" class="bg-slate-900 text-white">東湖商業大學</option>
+          </select>
+        </div>
+
+        <!-- Category Selector -->
+        <div class="flex items-center gap-1.5 bg-[#0B0F19] px-3 py-1.5 rounded-lg border border-slate-700">
+          <label class="text-xs text-slate-400">餐飲品類:</label>
+          <select id="filter-category" class="bg-transparent text-xs text-slate-200 font-medium focus:outline-none cursor-pointer">
+            <option value="ALL" class="bg-slate-900 text-white" selected>全部品類 (7 大品類)</option>
+            <option value="便當" class="bg-slate-900 text-white">便當</option>
+            <option value="健康餐" class="bg-slate-900 text-white">健康餐</option>
+            <option value="早餐" class="bg-slate-900 text-white">早餐</option>
+            <option value="飲品" class="bg-slate-900 text-white">飲品</option>
+            <option value="異國料理" class="bg-slate-900 text-white">異國料理</option>
+            <option value="素食" class="bg-slate-900 text-white">素食</option>
+            <option value="麵食" class="bg-slate-900 text-white">麵食</option>
+          </select>
+        </div>
+
+        <!-- Customer Segment Selector -->
+        <div class="flex items-center gap-1.5 bg-[#0B0F19] px-3 py-1.5 rounded-lg border border-slate-700">
+          <label class="text-xs text-slate-400">顧客分群:</label>
+          <select id="filter-segment" class="bg-transparent text-xs text-slate-200 font-medium focus:outline-none cursor-pointer">
+            <option value="ALL" class="bg-slate-900 text-white" selected>全體客群</option>
+            <option value="NEW" class="bg-slate-900 text-white">新顧客 (NEW)</option>
+            <option value="RETURNING" class="bg-slate-900 text-white">回購顧客 (RETURNING)</option>
+            <option value="MEMBER" class="bg-slate-900 text-white">平台會員 (MEMBER)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Reset & Status -->
+      <div class="flex items-center gap-3">
+        <button id="btn-reset-filters" class="text-xs text-slate-400 hover:text-cyan-400 underline transition cursor-pointer">
+          重設所有篩選
+        </button>
+        <span class="text-xs font-mono text-cyan-400 bg-cyan-950/40 px-2.5 py-1 rounded border border-cyan-800/40" id="filter-status-tag">
+          動態數據就緒
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Module Navigation Tabs -->
+  <nav class="flex items-center gap-2 px-6 mt-4 border-b border-slate-800 overflow-x-auto text-sm no-print">
+    <button class="tab-btn px-4 py-2.5 rounded-t-lg font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent active" data-tab="tab-overview">
+      📊 總覽戰情室
+    </button>
+    <button class="tab-btn px-4 py-2.5 rounded-t-lg font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent" data-tab="tab-module1">
+      📈 模組一：營運總覽與營收成長
+    </button>
+    <button class="tab-btn px-4 py-2.5 rounded-t-lg font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent" data-tab="tab-module2">
+      🚚 模組二：履約效率與異常成本
+    </button>
+    <button class="tab-btn px-4 py-2.5 rounded-t-lg font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent" data-tab="tab-module3">
+      🎧 模組三：客訴深算與客服治理
+    </button>
+    <button class="tab-btn px-4 py-2.5 rounded-t-lg font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent" data-tab="tab-module4">
+      🎯 模組四：校園與商戶下鑽診斷
+    </button>
+    <button class="tab-btn px-4 py-2.5 rounded-t-lg font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent" data-tab="tab-consulting">
+      💡 顧問決策庫與落地路線圖
+    </button>
+  </nav>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 p-6 space-y-8 max-w-[1720px] mx-auto w-full">
+
+    <!-- ==================== EXECUTIVE SCORECARD (TOP OF EVERY VIEW) ==================== -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <!-- KPI 1: GMV -->
+      <div class="glass-panel p-5 rounded-xl kpi-card kpi-cyan">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">總交易總額 (GMV)</span>
+          <span class="badge badge-cyan text-xs" id="kpi-gmv-badge">QoQ 成長</span>
+        </div>
+        <div class="mt-2.5 flex items-baseline gap-2">
+          <span class="text-2xl lg:text-3xl font-bold font-mono text-white tracking-tight" id="kpi-gmv">NT$ 69,040,636</span>
+        </div>
+        <div class="mt-2 text-xs text-slate-400 flex items-center justify-between">
+          <span>公式: $\sum \text{gross\_order\_value}$</span>
+          <span class="text-cyan-400 font-mono" id="kpi-gmv-sub">商品原始總值</span>
+        </div>
+      </div>
+
+      <!-- KPI 2: Completed Orders -->
+      <div class="glass-panel p-5 rounded-xl kpi-card kpi-emerald">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">有效完成訂單數</span>
+          <span class="badge badge-emerald text-xs" id="kpi-orders-badge">履約率 98.48%</span>
+        </div>
+        <div class="mt-2.5 flex items-baseline gap-2">
+          <span class="text-2xl lg:text-3xl font-bold font-mono text-emerald-400 tracking-tight" id="kpi-completed-orders">244,716</span>
+          <span class="text-xs text-slate-400">單</span>
+        </div>
+        <div class="mt-2 text-xs text-slate-400 flex items-center justify-between">
+          <span>排除 CANCELLED</span>
+          <span class="text-slate-400 font-mono" id="kpi-cancelled-sub">取消 3,784 單 (1.52%)</span>
+        </div>
+      </div>
+
+      <!-- KPI 3: AOV -->
+      <div class="glass-panel p-5 rounded-xl kpi-card kpi-indigo">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">平均客單價 (AOV)</span>
+          <span class="badge badge-indigo text-xs">穩定基線</span>
+        </div>
+        <div class="mt-2.5 flex items-baseline gap-2">
+          <span class="text-2xl lg:text-3xl font-bold font-mono text-indigo-300 tracking-tight" id="kpi-aov">NT$ 282.1</span>
+        </div>
+        <div class="mt-2 text-xs text-slate-400 flex items-center justify-between">
+          <span>公式: $\text{GMV} \div \text{訂單量}$</span>
+          <span class="text-indigo-400 font-mono" id="kpi-aov-sub">客單穩定度高</span>
+        </div>
+      </div>
+
+      <!-- KPI 4: Discount Pressure -->
+      <div class="glass-panel p-5 rounded-xl kpi-card kpi-amber">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">行銷折扣佔比 (Take-rate 壓力)</span>
+          <span class="badge badge-amber text-xs">補貼依賴度</span>
+        </div>
+        <div class="mt-2.5 flex items-baseline gap-2">
+          <span class="text-2xl lg:text-3xl font-bold font-mono text-amber-400 tracking-tight" id="kpi-discount-rate">1.73%</span>
+          <span class="text-xs text-slate-400">NT$ 1.19M</span>
+        </div>
+        <div class="mt-2 text-xs text-slate-400 flex items-center justify-between">
+          <span>公式: $\sum \text{discount} \div \text{GMV}$</span>
+          <span class="text-amber-400 font-mono" id="kpi-discount-sub">健康補貼水位</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 0: OVERVIEW (ALL-IN-ONE) ==================== -->
+    <div id="tab-overview" class="tab-content space-y-8">
+      <!-- Overview Hero Cards -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Highlights Box -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-cyan-400"></span>
+              <h3 class="text-base font-bold text-white">CampusGo 營運健康度核心診斷</h3>
+            </div>
+            <p class="mt-3 text-xs leading-relaxed text-slate-300">
+              平台年交易規模突破 <strong class="text-cyan-300">NT$ 6,900 萬</strong>，有效訂單達 <strong class="text-white">24.4 萬單</strong>。然而履約與客服端存在明顯摩擦瓶頸：
+            </p>
+            <ul class="mt-4 space-y-2 text-xs text-slate-300">
+              <li class="flex items-start gap-2">
+                <span class="text-rose-400 font-bold">1. 履約延誤高達 30%:</span>
+                <span>準時率僅 69.98%，延誤佔所有問題的 86.9%！</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-rose-400 font-bold">2. 客服 SLA 達成率僅 43.04%:</span>
+                <span>平均首次回應 (FRT) 逾 200 分鐘，P90 高達 6.3 小時！</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-amber-400 font-bold">3. 校園極端尖峰集中度:</span>
+                <span>午餐尖峰 (11:00-13:00) 吞吐了全天 61.9% 的需求。</span>
+              </li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between">
+            <span class="text-xs text-slate-400">顧問建議重點:</span>
+            <span class="badge badge-emerald text-xs">出餐動態緩衝 + 專屬駐點調度</span>
+          </div>
+        </div>
+
+        <!-- Quick Trend Chart -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800 lg:col-span-2 flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                營運趨勢雙軸預覽（訂單量 vs. 客單價）
+              </h3>
+              <p class="text-xs text-slate-400">反映寒暑假、開學潮、期中考特有校園週期</p>
+            </div>
+            <span class="badge badge-indigo text-xs">時間序列 MoM</span>
+          </div>
+          <div id="chart-overview-trend" class="w-full h-64"></div>
+        </div>
+      </div>
+
+      <!-- Quick Matrix Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-panel p-6 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white">校園四象限定位矩陣（單量 vs 準時品質）</h3>
+            <span class="badge badge-cyan text-xs">Volume vs Quality</span>
+          </div>
+          <div id="chart-overview-quadrant" class="w-full h-72"></div>
+        </div>
+
+        <div class="glass-panel p-6 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white">履約異常類型柏拉圖（80/20 法則）</h3>
+            <span class="badge badge-rose text-xs">Pareto 80/20</span>
+          </div>
+          <div id="chart-overview-pareto" class="w-full h-72"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 1: MODULE 1 (BUSINESS & REVENUE OVERVIEW) ==================== -->
+    <div id="tab-module1" class="tab-content hidden space-y-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            模組一：營運總覽與營收成長（Business & Revenue Overview）
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">高階主管與營運團隊掌握整體平台健康度、學期週期與時段尖峰濃度</p>
+        </div>
+        <span class="badge badge-cyan text-xs">Module 1: Strategy & Growth</span>
+      </div>
+
+      <!-- Trend Dual-Axis Full Chart -->
+      <div class="glass-panel p-6 rounded-xl border border-slate-800">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              月度營運雙軸趨勢圖（訂單量柱狀 × 客單價折線 × 學期特有週期）
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">X 軸時間序列，柱狀反映訂單體量，折線反映平均客單價 (AOV) 走勢</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400">校園週期事件已標註於拐點</span>
+          </div>
+        </div>
+        <div id="chart-m1-trend" class="w-full h-96"></div>
+      </div>
+
+      <!-- Peak Hours Heatmap & Insights -->
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Heatmap -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800 xl:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">時段與星期熱力圖（Peak Hours Heatmap）</h3>
+              <p class="text-xs text-slate-400 mt-0.5">X 軸：星期（一至日），Y 軸：訂單成立小時（08:00–20:00）</p>
+            </div>
+            <span class="badge badge-amber text-xs">午餐尖峰 61.9%</span>
+          </div>
+          <div id="chart-m1-heatmap" class="w-full h-80"></div>
+        </div>
+
+        <!-- Heatmap Consulting Callout -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800 flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              校園時段集中度深度診斷
+            </h3>
+            <div class="mt-4 space-y-4 text-xs text-slate-300">
+              <div class="p-3 rounded-lg bg-amber-950/20 border border-amber-900/40">
+                <span class="font-bold text-amber-300 block mb-1">午餐尖峰 (11:00–13:00)</span>
+                全天 61.9% 訂單集中在此 2 小時內爆發！週一至週五平均每小時單量突破 14,000 單，為系統與店家出餐極限壓力點。
+              </div>
+              <div class="p-3 rounded-lg bg-indigo-950/20 border border-indigo-900/40">
+                <span class="font-bold text-indigo-300 block mb-1">晚餐次尖峰 (17:00–19:00)</span>
+                貢獻 29.1% 訂單，分佈相對平緩，但受社團與實驗室下課影響，18:00 點單量再次抬升。
+              </div>
+              <div class="p-3 rounded-lg bg-slate-800/40 border border-slate-700/40">
+                <span class="font-bold text-slate-300 block mb-1">離峰閒置與寒暑假斷崖</span>
+                14:00–16:00 及 08:00–10:00 訂單量低於 3%，2 月寒假月營收驟降 30%，需靈活運力政策。
+              </div>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-400">
+            運力建議：尖峰實施時段性獎勵，離峰轉向定點商圈配送。
+          </div>
+        </div>
+      </div>
+
+      <!-- Actionable Insights Card for Module 1 -->
+      <div class="insight-box p-6 border border-slate-800">
+        <div class="flex items-center gap-3">
+          <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold text-xs uppercase">Consulting Action Plan</span>
+          <h3 class="font-bold text-white text-base">模組一：落實決策與經營策略建議（Actionable Insights）</h3>
+        </div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-300 leading-relaxed">
+          <div>
+            <h4 class="font-bold text-cyan-300 text-sm mb-1.5">1. 校園週期彈性運力排班機制（Dynamic Fleet Balancing）</h4>
+            <p>
+              數據證實 2 月與 7–8 月訂單量跌入谷底（月均僅 1.5–1.6 萬單），而 9 月開學大爆發（2.45 萬單）。建議平台取消全職外送底薪制，改採「校園學期約聘保證」：在開學前 2 週透過學生會招募校內兼職步行與單車外送員，尖峰時段補貼加碼，開學後 1 個月逐步回歸常態。
+            </p>
+          </div>
+          <div>
+            <h4 class="font-bold text-cyan-300 text-sm mb-1.5">2. 客單價拉抬策略：推動「宿舍群拼單」(Campus Pooling)</h4>
+            <p>
+              當前 AOV 停滯在 NT$ 282，且行銷折扣壓力僅 1.73%，代表補貼空間仍健康。建議在 11:30–12:30 尖峰導入「同棟宿舍 3 人拼單免外送費」與「雙人經濟餐組合」，誘發群聚湊單，目標將 AOV 從 NT$ 282 提升 13.5% 至 NT$ 320，同時大幅稀釋單次配送成本。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 2: MODULE 2 (FULFILLMENT & OPERATIONAL FRICTION) ==================== -->
+    <div id="tab-module2" class="tab-content hidden space-y-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            模組二：履約效率與異常成本（Fulfillment & Operational Friction）
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">準時履約矩陣、配送時長分佈、異常柏拉圖與退款毛利侵蝕</p>
+        </div>
+        <span class="badge badge-rose text-xs">Module 2: Operations & Friction</span>
+      </div>
+
+      <!-- KPI Ribbon for Delivery -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="glass-panel p-5 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <span class="text-xs text-slate-400 uppercase font-semibold">準時送達率 (On-Time Rate)</span>
+            <div class="mt-2 text-2xl font-bold font-mono text-cyan-400" id="m2-ontime-rate">69.98%</div>
+            <span class="text-xs text-slate-400 mt-1 block">取消訂單已排除於分母</span>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-cyan-950/40 border border-cyan-800/40 flex items-center justify-center text-cyan-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <span class="text-xs text-slate-400 uppercase font-semibold">承諾 vs 實際配送時長</span>
+            <div class="mt-2 text-2xl font-bold font-mono text-white" id="m2-time-compare">40.0m vs 39.4m</div>
+            <span class="text-xs text-amber-400 mt-1 block">逾時訂單平均延誤 +12.3 分鐘</span>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-indigo-950/40 border border-indigo-800/40 flex items-center justify-center text-indigo-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <span class="text-xs text-slate-400 uppercase font-semibold">總退款損耗漏斗 (Financial Leakage)</span>
+            <div class="mt-2 text-2xl font-bold font-mono text-rose-400" id="m2-refund-total">NT$ 861,831</div>
+            <span class="text-xs text-slate-400 mt-1 block">退款率: 1.72% | 毛利侵蝕比: 1.25%</span>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-rose-950/40 border border-rose-800/40 flex items-center justify-center text-rose-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Distance Box Plot & Pareto -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- Box Plot by Distance Bins -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">承諾 vs. 實際配送時長箱形分佈（Box Plot）</h3>
+              <p class="text-xs text-slate-400 mt-0.5">按配送距離區間（&lt;1km 至 &gt;2.5km）比較時長分佈與極端延誤</p>
+            </div>
+            <span class="badge badge-indigo text-xs">距離診斷</span>
+          </div>
+          <div id="chart-m2-boxplot" class="w-full h-80"></div>
+          <div class="mt-3 p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-300">
+            <strong class="text-cyan-300">反直覺數據洞察：</strong> 所有距離區間（甚至 &lt;1.0 km 短程）延誤率均恆定在 30% 左右，箱形圖中位數皆為 37 分、P75 皆為 47-48 分。這證實「距離」並非延誤主因，真正的履約死結在於<strong>「店家尖峰出餐時間」與「校園門禁步行管制」</strong>！
+          </div>
+        </div>
+
+        <!-- Pareto Chart of Issues -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">履約異常類型柏拉圖（Pareto Chart of Issues）</h3>
+              <p class="text-xs text-slate-400 mt-0.5">統計非 NONE 異常單數與累積百分比曲線（80/20 警戒線）</p>
+            </div>
+            <span class="badge badge-rose text-xs">80/20 法則實證</span>
+          </div>
+          <div id="chart-m2-pareto" class="w-full h-80"></div>
+          <div class="mt-3 p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-300">
+            <strong class="text-rose-400">80/20 治理焦點：</strong> 單一「配送逾時 (LATE)」佔據總異常數量的 <strong class="text-white">86.9%</strong>，加上品項錯誤/缺漏累計達 95.2%。優先治理出餐逾時，即可一舉剷除接近九成的營運阻力！
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Leakage & Refund Breakdown -->
+      <div class="glass-panel p-6 rounded-xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white">校園退款損耗漏斗（Financial Leakage by Campus）</h3>
+            <p class="text-xs text-slate-400 mt-0.5">量化營運瑕疵造成的毛利侵蝕（總退款金額、退款率與 GMV 損耗比）</p>
+          </div>
+          <span class="badge badge-amber text-xs">損耗成本排行</span>
+        </div>
+        <div id="chart-m2-refund-campus" class="w-full h-72"></div>
+      </div>
+
+      <!-- Actionable Insights Card for Module 2 -->
+      <div class="insight-box insight-box-rose p-6 border border-slate-800">
+        <div class="flex items-center gap-3">
+          <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold text-xs uppercase">Consulting Action Plan</span>
+          <h3 class="font-bold text-white text-base">模組二：落實決策與履約防呆機制（Actionable Insights）</h3>
+        </div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-300 leading-relaxed">
+          <div>
+            <h4 class="font-bold text-rose-300 text-sm mb-1.5">1. 店家出餐履約防呆 (Dynamic SLA Buffer & Throttle)</h4>
+            <p>
+              既然延誤與距離無關（短程亦延誤 30%），關鍵在於店家午餐出餐崩潰。建議系統於 11:30–12:30 動態調高預估配送時間 (+5~8 分鐘)，避免過度承諾；針對「在備餐佇列超過 15 筆」之商戶，啟動接單節流機制 (Throttle Intake)，出餐超時 15 分鐘以上直接開立警告單。
+            </p>
+          </div>
+          <div>
+            <h4 class="font-bold text-rose-300 text-sm mb-1.5">2. 逆物流退款責任分攤制度 (Merchant Loss Share)</h4>
+            <p>
+              全年退款高達 NT$ 86 萬，主要由少數商戶的品項出錯與嚴重逾時引發。建議推行「70/30 退款責任分攤」：若異常判定為商戶漏單或製作錯誤，由店家承擔 70% 退款金額，平台承擔 30%；促使店家自主進行出餐封裝二次覆核。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: MODULE 3 (CUSTOMER SERVICE & SLA GOVERNANCE) ==================== -->
+    <div id="tab-module3" class="tab-content hidden space-y-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            模組三：客訴深算與客服治理（Customer Service & SLA Governance）
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">SLA 達成率、渠道響應速度、根因桑基圖與 CSAT 滿意度回歸</p>
+        </div>
+        <span class="badge badge-rose text-xs">Module 3: CS & Governance</span>
+      </div>
+
+      <!-- SLA Governance Scorecard -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <div class="glass-panel p-5 rounded-xl border border-slate-800 kpi-card kpi-rose">
+          <span class="text-xs text-slate-400 uppercase font-semibold">SLA 達成率 (已結案)</span>
+          <div class="mt-2 text-2xl font-bold font-mono text-rose-400" id="m3-sla-rate">43.04%</div>
+          <span class="text-xs text-rose-300 mt-1 block">🔴 201 達標 / 467 結案 (排除 57 審核中)</span>
+        </div>
+
+        <div class="glass-panel p-5 rounded-xl border border-slate-800 kpi-card kpi-amber">
+          <span class="text-xs text-slate-400 uppercase font-semibold">首次回應時間 (FRT: AVG / P90)</span>
+          <div class="mt-2 text-2xl font-bold font-mono text-amber-400" id="m3-frt">200m / 378m</div>
+          <span class="text-xs text-slate-400 mt-1 block">平均 3.3 小時，P90 高達 6.3 小時</span>
+        </div>
+
+        <div class="glass-panel p-5 rounded-xl border border-slate-800 kpi-card kpi-indigo">
+          <span class="text-xs text-slate-400 uppercase font-semibold">升級率 (Escalation Rate)</span>
+          <div class="mt-2 text-2xl font-bold font-mono text-indigo-300" id="m3-esc-rate">10.50%</div>
+          <span class="text-xs text-slate-400 mt-1 block">55 件重大案件升級主管/風險團隊</span>
+        </div>
+
+        <div class="glass-panel p-5 rounded-xl border border-slate-800 kpi-card kpi-emerald">
+          <span class="text-xs text-slate-400 uppercase font-semibold">重開率 (Reopened Rate / FCR)</span>
+          <div class="mt-2 text-2xl font-bold font-mono text-emerald-400" id="m3-reopen-rate">2.86%</div>
+          <span class="text-xs text-emerald-300 mt-1 block">一線初次解決率 (FCR) 達 97.14%</span>
+        </div>
+      </div>
+
+      <!-- Channel Comparison & CSAT vs Time Scatter -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- Channel Response Times -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">客服渠道響應速度多維矩陣（FRT: AVG vs P90）</h3>
+              <p class="text-xs text-slate-400 mt-0.5">橫向比對 IN_APP, CHAT, PHONE, EMAIL, WEB_FORM 響應時間</p>
+            </div>
+            <span class="badge badge-rose text-xs">PHONE 最慢 232.8m</span>
+          </div>
+          <div id="chart-m3-channels" class="w-full h-80"></div>
+        </div>
+
+        <!-- Scatter Plot: Resolution Hours vs CSAT -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">結案時長 vs. 滿意度散佈圖（CSAT Scatter Plot）</h3>
+              <p class="text-xs text-slate-400 mt-0.5">X 軸：結案時數（resolution_hours），Y 軸：顧客評分（1–5 分）</p>
+            </div>
+            <span class="badge badge-cyan text-xs">r = -0.023 (弱相關)</span>
+          </div>
+          <div id="chart-m3-scatter" class="w-full h-80"></div>
+        </div>
+      </div>
+
+      <!-- Root Cause Sankey Diagram (Full Width) -->
+      <div class="glass-panel p-6 rounded-xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              客訴根因桑基圖（Root Cause to Compensation Sankey Flow）
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">
+              4 階層端到端流向：投訴分類 (Category) ➔ 細項 (Subcategory) ➔ 責任根因 (Root Cause) ➔ 處理補償方式 (Compensation)
+            </p>
+          </div>
+          <span class="badge badge-emerald text-xs">全鏈路追蹤</span>
+        </div>
+        <div id="chart-m3-sankey" class="w-full h-[450px]"></div>
+      </div>
+
+      <!-- Actionable Insights Card for Module 3 -->
+      <div class="insight-box p-6 border border-slate-800">
+        <div class="flex items-center gap-3">
+          <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-xs uppercase">Consulting Action Plan</span>
+          <h3 class="font-bold text-white text-base">模組三：落實決策與客服治理革新（Actionable Insights）</h3>
+        </div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-300 leading-relaxed">
+          <div>
+            <h4 class="font-bold text-emerald-300 text-sm mb-1.5">1. SLA 守門人與自動告警（SLA Breach Watchdog）</h4>
+            <p>
+              SLA 達成率僅 43.04% 且平均回應逾 3 小時，屬重大顧客流失隱患。必須立即於客服系統配置「剩餘 30 分鐘自動標紅與主管升級」機制。針對電話管道（PHONE 均時 232 分鐘）導入「語音 AI 即時轉工單 (Voice-to-Ticket)」，強制首推 App 內一鍵回報以降低通話積壓。
+            </p>
+          </div>
+          <div>
+            <h4 class="font-bold text-emerald-300 text-sm mb-1.5">2. 補償對等原則：破除「僅致歉 (Apology Only)」陷阱</h4>
+            <p>
+              散佈圖與統計證實：處理快慢與滿意度幾乎無關 ($r = -0.023$)，關鍵在補償誠意！純致歉案件滿意度僅 3.93 分，而全額退款滿意度達 4.08 分。桑基圖顯示大量餐點品質與衛生爭議僅給予純致歉或折價券。應制定「品項缺漏/變質無條件秒退全額」政策，有效挽回學生心智。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 4: MODULE 4 (CAMPUS & MERCHANT DIAGNOSTICS) ==================== -->
+    <div id="tab-module4" class="tab-content hidden space-y-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            模組四：校園與商戶下鑽診斷（Campus & Merchant Diagnostics）
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">校園五維雷達圖、四象限定位、店家黑白名單、品類摩擦與會員價值</p>
+        </div>
+        <span class="badge badge-indigo text-xs">Module 4: Deep Diagnostics</span>
+      </div>
+
+      <!-- Campus Benchmark: Radar & 4-Quadrant -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- Campus Radar Chart -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">校園五維對比雷達圖（Campus Radar Benchmark）</h3>
+              <p class="text-xs text-slate-400 mt-0.5">比較 6 所大學在訂單量、客單價、準時率、履約品質與顧客評分</p>
+            </div>
+            <span class="badge badge-cyan text-xs">綜合競爭力</span>
+          </div>
+          <div id="chart-m4-radar" class="w-full h-80"></div>
+        </div>
+
+        <!-- 4-Quadrant Matrix (Volume vs Quality) -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">校園四象限定位矩陣（Volume vs. Quality）</h3>
+              <p class="text-xs text-slate-400 mt-0.5">X 軸：訂單量，Y 軸：準時送達率，氣泡大小：GMV 交易額</p>
+            </div>
+            <span class="badge badge-rose text-xs">圈出高危區</span>
+          </div>
+          <div id="chart-m4-quadrant" class="w-full h-80"></div>
+        </div>
+      </div>
+
+      <!-- Merchant Watchlist (Top 10 Bestselling vs Worst Issue Rate) -->
+      <div class="glass-panel p-6 rounded-xl border border-slate-800">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              合作店家排行榜與警示清單（Merchant Watchlist）
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">
+              公式：$\text{異常率} = \frac{\text{非 NONE 異常單數}}{\text{有效訂單數}}$（標出高銷量標竿 vs. 異常率警示名單）
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btn-stores-best" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600/30 text-cyan-300 border border-cyan-500/40">
+              🏆 熱銷 Top 10 店家
+            </button>
+            <button id="btn-stores-worst" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700">
+              ⚠️ 異常率最高 Top 10 店家
+            </button>
+          </div>
+        </div>
+
+        <!-- Store Table Container -->
+        <div class="overflow-x-auto">
+          <table class="custom-table" id="table-merchant-watchlist">
+            <thead>
+              <tr id="table-merchant-thead">
+                <!-- Dynamically Rendered -->
+              </tr>
+            </thead>
+            <tbody id="table-merchant-tbody">
+              <!-- Dynamically Rendered -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Restaurant Category & Customer Segmentation -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- Category Diagnostics -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">餐飲類別摩擦診斷（Restaurant Category Breakdown）</h3>
+              <p class="text-xs text-slate-400 mt-0.5">分析飲品、麵食湯汁外溢、延誤率與包裝損毀退款</p>
+            </div>
+            <span class="badge badge-amber text-xs">品類摩擦</span>
+          </div>
+          <div id="chart-m4-categories" class="w-full h-80"></div>
+        </div>
+
+        <!-- Customer Segmentation Value -->
+        <div class="glass-panel p-6 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">顧客分群價值矩陣（Customer Segmentation Value）</h3>
+              <p class="text-xs text-slate-400 mt-0.5">比較 NEW 新客、RETURNING 回購客、MEMBER 會員之黏著度與貢獻</p>
+            </div>
+            <span class="badge badge-indigo text-xs">會員制度審查</span>
+          </div>
+          <div id="chart-m4-segmentation" class="w-full h-80"></div>
+          <div class="mt-3 p-3 rounded-lg bg-indigo-950/30 border border-indigo-800/40 text-xs text-slate-300">
+            <strong class="text-indigo-300">會員機制審查警報：</strong> 會員客單價 (NT$ 281.5) 與新客 (NT$ 281.4) 幾無差異，退款率與評分完全同質。會員機制缺乏專屬特權與階梯福利，黏著度拉抬效果有限！
+          </div>
+        </div>
+      </div>
+
+      <!-- Actionable Insights Card for Module 4 -->
+      <div class="insight-box p-6 border border-slate-800">
+        <div class="flex items-center gap-3">
+          <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold text-xs uppercase">Consulting Action Plan</span>
+          <h3 class="font-bold text-white text-base">模組四：落實決策與商戶治理路線圖（Actionable Insights）</h3>
+        </div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-300 leading-relaxed">
+          <div>
+            <h4 class="font-bold text-indigo-300 text-sm mb-1.5">1. 北城大學與海灣科技大學「高危象限清零專案」</h4>
+            <p>
+              四象限圖中，北城大學（4.29 萬單，退款 NT$ 16 萬）與海灣科技大學（4.26 萬單，異常率 32.3%）雙雙落入 Q4 區（高單量、低準時）。建議設立專屬「校園駐點營運站 (Campus Hub)」，在外送員進入校門交界處統一交接給校內學生步行外送員，縮短尋路與門禁延誤。
+            </p>
+          </div>
+          <div>
+            <h4 class="font-bold text-indigo-300 text-sm mb-1.5">2. 劣質店家「黃牌限單與退場機制」+ 會員特權重塑</h4>
+            <p>
+              針對警示榜首「青禾素食76號店」(異常率 34.4%) 與「食刻飲品19號店」(異常率 33.7%)，強制進行包裝密封改造，並發出黃牌限流；連續 2 週未改善者暫停上架。同時重構會員體系，推出「校園免運黑卡 (Monthly Pass)」與「尖峰優先出餐特權」，建立真正具差異化的高黏著度。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 5: CONSULTING ROADMAP ==================== -->
+    <div id="tab-consulting" class="tab-content hidden space-y-8">
+      <div class="glass-panel p-8 rounded-xl border border-slate-800">
+        <div class="max-w-4xl mx-auto space-y-6">
+          <div class="border-b border-slate-800 pb-4">
+            <span class="badge badge-cyan text-xs">Executive Advisory</span>
+            <h2 class="text-2xl font-bold text-white mt-2">CampusGo 商業決策落地執行路線圖 (Executive Action Plan)</h2>
+            <p class="text-xs text-slate-400 mt-1">針對營收拉抬、履約減磨、客服止血與商戶治理的跨部門落地執行綱要</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+              <div class="flex items-center gap-2 text-cyan-400 font-bold text-sm">
+                <span class="w-6 h-6 rounded-full bg-cyan-950 flex items-center justify-center text-xs">P1</span>
+                營運總覽與定價：宿舍群拼單 × 季節彈性運力
+              </div>
+              <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+                <li>實施寒假/暑假運力合約彈性化，將閒置外送員調派至周邊住宅商圈。</li>
+                <li>導入「校園拼單免運」，鎖定 11:30–12:30 午餐尖峰將 AOV 拉升至 NT$ 320。</li>
+                <li>折扣壓力當前僅 1.73%，具備充分補貼槓桿空間進行開學季裂變行銷。</li>
+              </ul>
+            </div>
+
+            <div class="p-5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+              <div class="flex items-center gap-2 text-rose-400 font-bold text-sm">
+                <span class="w-6 h-6 rounded-full bg-rose-950 flex items-center justify-center text-xs">P2</span>
+                履約防呆：店家出餐動態緩衝 × 逆物流分攤
+              </div>
+              <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+                <li>延誤與配送距離無統計顯著相關，核心在店家出餐。尖峰時段動態增加預估配送時長 5–8 分鐘。</li>
+                <li>出餐逾時 15 分鐘以上店家啟動暫時限制接單 (Throttle Intake)。</li>
+                <li>落實「70% 店家 / 30% 平台」逆物流退款分攤，遏止每年 NT$ 86 萬退款損耗。</li>
+              </ul>
+            </div>
+
+            <div class="p-5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+              <div class="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                <span class="w-6 h-6 rounded-full bg-emerald-950 flex items-center justify-center text-xs">P3</span>
+                客服治理：SLA 超時紅線警報 × 對等退款賠償
+              </div>
+              <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+                <li>SLA 達成率僅 43.04%，導入「逾時前 30 分鐘自動升級通知」以消除 P90 6.3 小時等待。</li>
+                <li>全面升級電話管道 (PHONE) 為語音 AI 轉文字，引流顧客至 App 內文字客服。</li>
+                <li>廢除純致歉 (Apology Only) 政策，針對餐點毀損實施無痛全額退款以救回 CSAT。</li>
+              </ul>
+            </div>
+
+            <div class="p-5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+              <div class="flex items-center gap-2 text-indigo-400 font-bold text-sm">
+                <span class="w-6 h-6 rounded-full bg-indigo-950 flex items-center justify-center text-xs">P4</span>
+                商戶與校園治理：高危象限專案 × 會員體系重塑
+              </div>
+              <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+                <li>針對北城大學、海灣科技大學建立「校園外圍中繼取餐 Hub」，縮短步行交接時間。</li>
+                <li>將異常率 >33% 之店家列入觀察名單，要求改進封裝防漏，無效者降權下架。</li>
+                <li>重構形同虛設的會員機制，推動階梯式免運權益與點數返利。</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Data Specification Modal -->
+  <div id="data-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel-elevated max-w-2xl w-full p-6 rounded-2xl border border-slate-700 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-base text-white flex items-center gap-2">
+          CampusGo 分析數據源與欄位說明
+        </h3>
+        <button onclick="toggleDataModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+      <div class="mt-4 space-y-4 text-xs text-slate-300 leading-relaxed">
+        <div>
+          <h4 class="font-bold text-cyan-300 mb-1">訂單資料集 (Orders Datasets)</h4>
+          <p>涵蓋 2025 年 Q1–Q4 完整年報 (248,500 筆訂單) 與 2026 年 Q1 (54,000 筆訂單)。包含 30 個標準欄位：訂單金額、折扣、外送費、配送距離、承諾/實際配送時長、履約狀態、異常類型與顧客評分。</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-emerald-300 mb-1">客訴資料集 (Complaints 4 Months)</h4>
+          <p>涵蓋 2026 年 1–4 月共 524 筆真實客訴案件，包含進件管道、主要分類、細項、責任根因、補償方式、FRT、SLA 達標狀態與結案後滿意度 (CSAT)。</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-amber-300 mb-1">計算口徑與公式基準</h4>
+          <ul class="list-disc list-inside space-y-1 text-slate-400">
+            <li><strong>有效訂單量：</strong>嚴格排除 order_status = 'CANCELLED' 之訂單。</li>
+            <li><strong>準時送達率：</strong>delivered_on_time = TRUE ÷ 有效訂單數。</li>
+            <li><strong>SLA 達成率：</strong>sla_met = TRUE ÷ 已結案件數（已排除 sla_met = PENDING）。</li>
+            <li><strong>商戶異常率：</strong>非 NONE 異常單數 ÷ 有效訂單數。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-6 pt-3 border-t border-slate-800 text-right">
+        <button onclick="toggleDataModal()" class="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs">關閉說明</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Export Hub Modal -->
+  <div id="export-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel-elevated max-w-xl w-full p-6 rounded-2xl border border-slate-700 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-base text-white flex items-center gap-2">
+          📥 數據導出中心 (Data Export Hub)
+        </h3>
+        <button onclick="toggleExportModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400 mt-2">點擊即可一鍵下載包含 UTF-8 BOM 之 CSV 表格（Excel 開啟不亂碼）或原始 JSON：</p>
+      
+      <div class="mt-4 space-y-3">
+        <button onclick="exportCSV('campus')" class="w-full p-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-between transition group text-left">
+          <div>
+            <div class="text-xs font-bold text-white group-hover:text-cyan-300">📊 校園六維診斷總表 (Campus Diagnostics)</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">單量、GMV、AOV、準時率、異常率、評分、退款損耗比</div>
+          </div>
+          <span class="badge badge-cyan text-xs">下載 CSV</span>
+        </button>
+
+        <button onclick="exportCSV('merchants')" class="w-full p-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-between transition group text-left">
+          <div>
+            <div class="text-xs font-bold text-white group-hover:text-amber-300">🏪 商戶警示與熱銷清單 (Merchant Watchlist)</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">Top 10 熱銷店家與 Top 10 異常率最高警示店家、退款金額</div>
+          </div>
+          <span class="badge badge-amber text-xs">下載 CSV</span>
+        </button>
+
+        <button onclick="exportCSV('trends')" class="w-full p-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-between transition group text-left">
+          <div>
+            <div class="text-xs font-bold text-white group-hover:text-emerald-300">📈 月度營運趨勢表 (Monthly Trends)</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">各月份完成訂單、GMV、AOV、折扣率、準時率、學期週期備註</div>
+          </div>
+          <span class="badge badge-emerald text-xs">下載 CSV</span>
+        </button>
+
+        <button onclick="exportCSV('complaints')" class="w-full p-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-between transition group text-left">
+          <div>
+            <div class="text-xs font-bold text-white group-hover:text-rose-300">🎧 客訴治理與滿意度清單 (Complaints)</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">524 筆客訴之渠道、分類、細項、根因、補償、FRT 與 CSAT</div>
+          </div>
+          <span class="badge badge-rose text-xs">下載 CSV</span>
+        </button>
+
+        <a href="dashboard_data.json" download="campusgo_dashboard_data.json" class="w-full p-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-between transition group text-left block">
+          <div>
+            <div class="text-xs font-bold text-white group-hover:text-indigo-300">📦 全量分析 JSON 數據庫 (Raw JSON Bundle)</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">完整整合 2025 全年 + 2026 Q1 之預編譯多維指標結構 (368 KB)</div>
+          </div>
+          <span class="badge badge-indigo text-xs">下載 JSON</span>
+        </a>
+      </div>
+
+      <div class="mt-6 pt-3 border-t border-slate-800 text-right">
+        <button onclick="toggleExportModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share & Offline Access Modal -->
+  <div id="share-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel-elevated max-w-xl w-full p-6 rounded-2xl border border-slate-700 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-base text-white flex items-center gap-2">
+          🌐 任何人皆可免安裝瀏覽指南
+        </h3>
+        <button onclick="toggleShareModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+      </div>
+      <div class="mt-4 space-y-4 text-xs text-slate-300 leading-relaxed">
+        
+        <div class="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-800/40">
+          <div class="font-bold text-indigo-300 text-sm mb-1">方案 1：同 Wi-Fi / 區域網路直接連線（手機、筆電可用）</div>
+          <p class="text-slate-300">只要對方在同一個 Wi-Fi 或校園網段下，直接在瀏覽器輸入本機 IP 即可瀏覽：</p>
+          <div class="mt-2 flex items-center gap-2">
+            <input type="text" readonly value="http://10.119.4.61:8000/index.html" class="flex-1 bg-black/60 px-3 py-1.5 rounded-lg border border-indigo-700/50 font-mono text-cyan-300 text-xs select-all" id="lan-share-url">
+            <button onclick="copyLanUrl()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shrink-0" id="btn-copy-url">複製網址</button>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-800/40">
+          <div class="font-bold text-emerald-300 text-sm mb-1">方案 2：單檔便攜版（免裝 Python、雙擊即開、完全離線）</div>
+          <p class="text-slate-300">
+            已將全量數據、ECharts 引擎、樣式與腳本 100% 打包成單一 HTML 檔案：<br/>
+            <strong class="text-white font-mono">campusgo_bi_standalone.html</strong>
+          </p>
+          <p class="mt-1 text-slate-400">
+            你可以把這個檔案直接用 Email、LINE、隨身碟寄給主管或教授，對方點兩下即可在 Chrome、Edge、Safari 直開，連外網都不需要！
+          </p>
+          <div class="mt-3">
+            <a href="campusgo_bi_standalone.html" download="campusgo_bi_standalone.html" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              下載單檔便攜版 (1.2 MB)
+            </a>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="font-bold text-cyan-300 text-sm mb-1">方案 3：發布為永久公開公網網址（GitHub Pages / Vercel）</div>
+          <p class="text-slate-400">
+            只要將本資料夾推送到 GitHub 倉庫並開啟 Settings ➔ Pages，即可獲得一個全球任何人都可連線的永久免費 `https://<username>.github.io` 網址。
+          </p>
+        </div>
+
+      </div>
+      <div class="mt-6 pt-3 border-t border-slate-800 text-right">
+        <button onclick="toggleShareModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs">關閉說明</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="glass-panel border-t border-slate-800 mt-12 py-5 px-6 text-center text-xs text-slate-500 flex flex-wrap items-center justify-between gap-4">
+    <div>
+      CampusGo BI 商業分析決策平台 · 2025–2026 全域營運與治理數據庫
+    </div>
+    <div class="font-mono text-slate-400">
+      Engine Version 2.4.0 · Apache ECharts 5 · Tailored for Executive Decision Making
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
